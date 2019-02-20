@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
+
 #
 # "THE BEER-WARE LICENSE" (Revision 42)
 #
@@ -10,55 +11,80 @@
 # * get update message beside arch/messages logo
 # * args so script will run checkupdates (file with last datetime?)
 
-
-import subprocess as sp
-import feedparser
-import datetime
 import re
 import os
 import itertools
-import ansiwrap
+import datetime as dt
+import subprocess as sp
+import feedparser
 
 
-pacfile = "/home/stian/Projects/testing/pac.txt"
-aurfile = "/home/stian/Projects/testing/aur.txt"
-fd = feedparser.parse("https://www.archlinux.org/feeds/news/")
+pacfile = '/home/stian/.config/polybar/scripts/archpkg/pac.txt'
+aurfile = '/home/stian/.config/polybar/scripts/archpkg/aur.txt'
+logfile = '/var/log/pacman.log'
 
-def feed_get():
+
+def getfeed():
+    fd = feedparser.parse('https://www.archlinux.org/feeds/news')
     feed = []
     for f in range(0, 1):
         feed = [fd.entries[f].published[5:-6]]
-        datetime.datetime.strptime(feed[0], "%d %b %Y %H:%M:%S")
-        feed.append([fd.entries[f].title])
-        return feed
+        dt.datetime.strptime(feed[0], "%d %b %Y %H:%M:%S")
+    feed.append([fd.entries[f].title])
+    return feed
 
 
-def lsudate(logfile):
+def lastupdate(logfile):
     with open(logfile, "r") as f:
         log = f.readlines()
         for l in log:
             if "starting full system upgrade" in l:
                 date = re.search(r'\[(.*?)\]', l).group(1)
-                datetime.datetime.strptime(date, "%Y-%m-%d %H:%M")
+                dt.datetime.strptime(date, '%Y-%m-%d %H:%M')
     return date
 
 
-def file_nempty(fname):
+def fileNOTempty(fname):
     return os.path.getsize(fname) > 0
 
 
-def import_file(fname):
-    data = []
-    with open(fname) as f:
-        for l in f.readlines():
-            data.append(l.split())
-        pass
-    return data
+def clearfile(fname):
+    # open(fname, 'w').close()
+    print('deleted files')
 
 
-def formatpkgdata():
-    pac = import_file(pacfile)
-    aur = import_file(aurfile)
+def choice():
+    msg = 'update? '
+    choice_1 = input('{:5} (y/N)'.format(msg)).lower() == 'w'
+    if choice_1:
+        return True
+
+
+def update():
+    if fileNOTempty(pacfile):
+        sp.run('/usr/bin/sudo pacman -Syu', shell=True)
+        clearfile(pacfile)
+    if fileNOTempty(aurfile):
+        sp.run('aurman -Syu', shell=True)
+        clearfile(aurfile)
+    input('\x1b[6:30:42m' + 'Finished...' + '\x1b[0m')
+    exit
+
+
+with open("gfx/arch.ans", 'r') as f:
+    ansi = f.readlines()
+
+
+def format_pkgdata():
+    pac, aur = [], []
+    with open("pac.txt", 'r') as f:
+        for w in f.readlines():
+            pac.append(w.split())
+
+    with open("aur.txt", "r") as f:
+        for w in f.readlines():
+            aur.append(w.split())
+
     for x in range(len(aur)):
         try:
             aur[x].remove("::")
@@ -69,87 +95,69 @@ def formatpkgdata():
     aurtxt = [("\x1b[1;34mAur:                          "),
               ("------------------"), ("--"), ("-----------\x1b[0m")]
     formatted = []
-    if file_nempty(pacfile):
+    if os.path.getsize("pac.txt") > 0:
         formatted.append(pactxt)
         formatted.extend(pac)
-    if file_nempty(aurfile):
+    if os.path.getsize("aur.txt") > 0:
         formatted.append(aurtxt)
         formatted.extend(aur)
     return formatted
 
 
-def ansi(filename):
-        localdir = '/home/stian/scripts/archupd/'
-        filepath = os.path.join(localdir, filename)
+def ansilen(line):
+    ansi_code_re = re.compile('\\x1b\[[0-9;]*[a-zA-Z]')
+    length = 0
+    codes = ansi_code_re.findall(line)
+    for c in codes:
+        if c[-1] == 'C':
+            length += int(c[2:-1])
 
-        with open(filepath, "r") as f:
-            ansivar = f.readlines()
-        width = 0
-        widtha = 0
-        # get max width for this ansi
-        for bz in range(len(ansivar)):
-            if ansiwrap.ansilen(ansivar[bz]) >= widtha:
-                widtha = ansiwrap.ansilen(ansivar[bz])
-        for l1 in range(len(ansivar)):
-            if len(ansivar[l1]) >= width:
-                width = len(ansivar[l1])
-        for line in range(len(ansivar)):
-#            for z in range(width-ansiwrap.ansilen(ansivar[line])):
-            for z in range(width-len(ansivar[line])):
-                 ansivar[line] = ansivar[line].rstrip("\n") + "X"
-#                 ansivar[line] = ansiwrap.strip_color(ansivar[line]).rstrip() + "X"
-        print(widtha)
-        print(width)
-        return ansivar
+    content = ansi_code_re.split(line)
+    for c in content:
+        length += len(c)
+
+    return length
 
 
-def pacprint(data):
-    archans = ansi("arch.ans")
+def totprint(data):
+    ansimax = max([ansilen(l) for l in ansi]) + 3
+    test = re.compile('\\x1b\[[0-9;]*[m]')
+    count = 0
+    for a, p in itertools.zip_longest(ansi, range(len(data)), fillvalue=''):
+        a = a.rstrip('\n')
 
-    for x, y in itertools.zip_longest(range(len(data)), range(len(archans))):
-        if x is None:
-            # format only ansi
-            print('{:_<50.99}'.format(archans[y]))
-        elif y is None:
-            # format after ansi ran out
-            print('{:50.50} {:30.40} {:18.18} {:^10} {:18.35}'.format(
-                        "", data[x][0], data[x][1], data[x][2], data[x][3]))
+        if count == 0:
+            b = a
+        last_color = test.findall(b)[-1:]
+        if last_color:
+            a = str(last_color[0]) + a + '\x1b[0m'
+        linelen = ansilen(a)
+        print("{}{}{:30.40}{:18.18}{:^10}{:18.35}".format(a, " " * (ansimax - linelen), data[p][0],
+                                                          data[p][1], data[p][2], data[p][3]), end='\n')
+    b = a
+
+
+def main():
+    date1 = lastupdate(logfile)
+    date2 = getfeed()[0]
+    if fileNOTempty(pacfile) or fileNOTempty(aurfile) is True:
+        if date1 < date2:
+            # newsprint(getfeed())
+            print('Printing news now')
+            if choice():
+                update()
+            else:
+                exit
         else:
-            # format with both ansi and text
-            print('{:50.200} {:30.40} {:18.18} {:^10} {:18.35}'.format(
-                    archans[y], data[x][0], data[x][1], data[x][2], data[x][3]))
+            totprint(format_pkgdata())
+            if choice():
+                update()
+            else:
+                exit
+    else:
+        for x in range(len(ansi)):
+            print(ansi[x])
+        input('\x1b[6;30;42m' + 'Nothing to do...' + '+x1b[0m')
 
 
-def newsprint(data):
-    archans = ansi("arch.ans")
-
-    for x, y in itertools.zip_longest(range(1), range(len(archans))):
-        if y is not None:
-            for z in range(50-ansiwrap.ansilen(archans[y])):
-                archans[y] = archans[y] + " "
-        if x is None:
-            print('{:50.99}'.format(archans[y]))
-        else:
-            print('{:50.99} {:16.16} {:60.60}'.format(
-                    archans[y], data[0], data[1][x]))
-
-
-def choice():
-    msg = 'update? '
-    choice_1 = input("{:5} (y/N)".format(msg)).lower() == 'y'
-    if choice_1:
-        return True
-
-
-def update():
-    if file_nempty(pacfile):
-        sp.run("/usr/bin/sudo pacman -Syu", shell=True)
-        clear_file(pacfile)
-    if file_nempty(aurfile):
-        sp.run("aurman -Syu", shell=True)
-        clear_file(aurfile)
-    input("\x1b[6;30;42m" + "Finished..." + "\x1b[0m")
-    exit
-
-
-pacprint(formatpkgdata())
+main()
