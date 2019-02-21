@@ -8,11 +8,12 @@
 # think this stuff is worth it, you can buy me a beer in return.
 #
 # TODO:
-# * get update message beside arch/messages logo
+# * fix script
 # * args so script will run checkupdates (file with last datetime?)
 
 import re
 import os
+import sys
 import itertools
 import datetime as dt
 import subprocess as sp
@@ -22,6 +23,10 @@ import feedparser
 pacfile = '/home/stian/.config/polybar/scripts/archpkg/pac.txt'
 aurfile = '/home/stian/.config/polybar/scripts/archpkg/aur.txt'
 logfile = '/var/log/pacman.log'
+
+
+def getworkingdir():
+    return os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
 def getfeed():
@@ -49,13 +54,12 @@ def fileNOTempty(fname):
 
 
 def clearfile(fname):
-    # open(fname, 'w').close()
-    print('deleted files')
+    open(fname, 'w').close()
 
 
 def choice():
     msg = 'update? '
-    choice_1 = input('{:5} (y/N)'.format(msg)).lower() == 'w'
+    choice_1 = input('{:5} (y/N)'.format(msg)).lower() == 'y'
     if choice_1:
         return True
 
@@ -71,17 +75,21 @@ def update():
     exit
 
 
-with open("gfx/arch.ans", 'r') as f:
+with open(getworkingdir() + "/gfx/arch.ans", 'r') as f:
     ansi = f.readlines()
+with open(getworkingdir() + '/gfx/chkbox.ans', 'r') as f:
+    ansi2 = f.readlines()
+with open(getworkingdir() + '/gfx/exclmar.ans', 'r') as f:
+    ansi3 = f.readlines()
 
 
 def format_pkgdata():
     pac, aur = [], []
-    with open("pac.txt", 'r') as f:
+    with open(pacfile, 'r') as f:
         for w in f.readlines():
             pac.append(w.split())
 
-    with open("aur.txt", "r") as f:
+    with open(aurfile, "r") as f:
         for w in f.readlines():
             aur.append(w.split())
 
@@ -95,10 +103,10 @@ def format_pkgdata():
     aurtxt = [("\x1b[1;34mAur:                          "),
               ("------------------"), ("--"), ("-----------\x1b[0m")]
     formatted = []
-    if os.path.getsize("pac.txt") > 0:
+    if os.path.getsize(pacfile) > 0:
         formatted.append(pactxt)
         formatted.extend(pac)
-    if os.path.getsize("aur.txt") > 0:
+    if os.path.getsize(aurfile) > 0:
         formatted.append(aurtxt)
         formatted.extend(aur)
     return formatted
@@ -155,9 +163,9 @@ def main():
             else:
                 exit
     else:
-        for x in range(len(ansi)):
-            print(ansi[x])
-        input('\x1b[6;30;42m' + 'Nothing to do...' + '+x1b[0m')
+        for x in range(len(ansi2)):
+            print(ansi2[x], end='')
+        input('\x1b[6;30;42m' + 'Nothing to do...' + '\x1b[0m')
 
 
 main()
