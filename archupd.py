@@ -103,13 +103,16 @@ def format_pkgdata():
     aurtxt = [("\x1b[1;34mAur:                          "),
               ("------------------"), ("--"), ("-----------\x1b[0m")]
     formatted = []
+    formatted1 = []
     if os.path.getsize(pacfile) > 0:
         formatted.append(pactxt)
         formatted.extend(pac)
     if os.path.getsize(aurfile) > 0:
         formatted.append(aurtxt)
         formatted.extend(aur)
-    return formatted
+    for p in range(len(formatted)):
+        formatted1.append('{:30.40}{:18.18}{:^10}{:18.35}'.format(formatted[p][0], formatted[p][1], formatted[p][2], formatted[p][3]))
+    return formatted1
 
 
 def ansilen(line):
@@ -131,7 +134,7 @@ def totprint(data):
     ansimax = max([ansilen(l) for l in ansi]) + 3
     test = re.compile('\\x1b\[[0-9;]*[m]')
     count = 0
-    for a, p in itertools.zip_longest(ansi, range(len(data)), fillvalue=''):
+    for a, p in itertools.zip_longest(ansi, range(len(data)), fillvalue='-'):
         a = a.rstrip('\n')
 
         if count == 0:
@@ -140,8 +143,10 @@ def totprint(data):
         if last_color:
             a = str(last_color[0]) + a + '\x1b[0m'
         linelen = ansilen(a)
-        print("{}{}{:30.40}{:18.18}{:^10}{:18.35}".format(a, " " * (ansimax - linelen), data[p][0],
-                                                          data[p][1], data[p][2], data[p][3]), end='\n')
+        print("{}{}{}".format(a, " " * (ansimax - linelen), data[p]), end='\n')
+
+#        print("{}{}{:30.40}{:18.18}{:^10}{:18.35}".format(a, " " * (ansimax - linelen), data[p][0],
+#                                                          data[p][1], data[p][2], data[p][3]), end='\n')
     b = a
 
 
