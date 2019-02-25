@@ -23,6 +23,7 @@ import feedparser
 pacfile = '/home/stian/.config/polybar/scripts/archpkg/pac.txt'
 aurfile = '/home/stian/.config/polybar/scripts/archpkg/aur.txt'
 logfile = '/var/log/pacman.log'
+ipac = ['linux', 'systemd', 'gcc', 'gcc-libs', 'cmake']
 
 
 def getworkingdir():
@@ -98,21 +99,24 @@ def format_pkgdata():
             aur[x].remove("::")
         except ValueError:
             pass
-    pactxt = [("\x1b[1;34mPac:                          "),
+    pactxt = [("\x1b[1;34mPac:"),
               ("------------------"), ("--"), ("-----------\x1b[0m")]
-    aurtxt = [("\x1b[1;34mAur:                          "),
+    aurtxt = [("\x1b[1;34mAur:"),
               ("------------------"), ("--"), ("-----------\x1b[0m")]
-    formatted = []
-    formatted1 = []
+    d = []
+    dret = []
     if os.path.getsize(pacfile) > 0:
-        formatted.append(pactxt)
-        formatted.extend(pac)
+        d.append(pactxt)
+        d.extend(pac)
     if os.path.getsize(aurfile) > 0:
-        formatted.append(aurtxt)
-        formatted.extend(aur)
-    for p in range(len(formatted)):
-        formatted1.append('{:30.40}{:18.18}{:^10}{:18.35}'.format(formatted[p][0], formatted[p][1], formatted[p][2], formatted[p][3]))
-    return formatted1
+        d.append(aurtxt)
+        d.extend(aur)
+    for p in range(len(d)):
+        if any(sw in d[p][0] for sw in ipac):
+            d[p][0] = '\x1b[31m' + d[p][0] + '\x1b[0m'
+        dret.append('{:.27}{}{:18.18}{:^10}{:18.18}'.format(d[p][0], " " * (30 - min(ansilen(d[p][0]), 27)),
+                                                            d[p][1], d[p][2], d[p][3]))
+    return dret
 
 
 def ansilen(line):
@@ -134,7 +138,7 @@ def totprint(data):
     ansimax = max([ansilen(l) for l in ansi]) + 3
     test = re.compile('\\x1b\[[0-9;]*[m]')
     count = 0
-    for a, p in itertools.zip_longest(ansi, range(len(data)), fillvalue='-'):
+    for a, p in itertools.zip_longest(ansi, data, fillvalue=''):
         a = a.rstrip('\n')
 
         if count == 0:
@@ -143,10 +147,7 @@ def totprint(data):
         if last_color:
             a = str(last_color[0]) + a + '\x1b[0m'
         linelen = ansilen(a)
-        print("{}{}{}".format(a, " " * (ansimax - linelen), data[p]), end='\n')
-
-#        print("{}{}{:30.40}{:18.18}{:^10}{:18.35}".format(a, " " * (ansimax - linelen), data[p][0],
-#                                                          data[p][1], data[p][2], data[p][3]), end='\n')
+        print("{}{}{}".format(a, " " * (ansimax - linelen), p), end='\n')
     b = a
 
 
