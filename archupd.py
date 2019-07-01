@@ -8,7 +8,7 @@
 # think this stuff is worth it, you can buy me a beer in return.
 #
 # TODO:
-# * fix script
+# * only clear files after successful update
 # * args so script will run checkupdates (file with last datetime?)
 
 import re
@@ -23,7 +23,7 @@ import feedparser
 pacfile = '/home/stian/.config/polybar/scripts/archpkg/pac.txt'
 aurfile = '/home/stian/.config/polybar/scripts/archpkg/aur.txt'
 logfile = '/var/log/pacman.log'
-ipac = ['linux', 'systemd', 'gcc', 'gcc-libs', 'cmake']
+ipac = ['linux', 'systemd', 'glibc', 'gcc', 'gcc-libs', 'cmake', 'pacman']
 
 
 def getworkingdir():
@@ -67,7 +67,7 @@ def choice():
 
 def update():
     if fileNOTempty(pacfile):
-        sp.run('/usr/bin/sudo pacman -Syu', shell=True)
+        sp.run('/usr/bin/sudo pacman -Syu --noconfirm', shell=True)
         clearfile(pacfile)
     if fileNOTempty(aurfile):
         sp.run('aurman -Syu', shell=True)
@@ -94,11 +94,11 @@ def format_pkgdata():
         for w in f.readlines():
             aur.append(w.split())
 
-    for x in range(len(aur)):
-        try:
-            aur[x].remove("::")
-        except ValueError:
-            pass
+#    for x in range(len(aur)):
+#        try:
+#            aur[x].remove("::")
+#        except ValueError:
+#            pass
     pactxt = [("\x1b[1;34mPac:"),
               ("------------------"), ("--"), ("-----------\x1b[0m")]
     aurtxt = [("\x1b[1;34mAur:"),
@@ -156,8 +156,7 @@ def main():
     date2 = getfeed()[0]
     if fileNOTempty(pacfile) or fileNOTempty(aurfile) is True:
         if date1 < date2:
-            # newsprint(getfeed())
-            print('Printing news now')
+            totprint(getfeed())
             if choice():
                 update()
             else:
