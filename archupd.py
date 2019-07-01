@@ -58,8 +58,7 @@ def clearfile(fname):
     open(fname, 'w').close()
 
 
-def choice():
-    msg = 'update? '
+def choice(msg):
     choice_1 = input('{:5} (y/N)'.format(msg)).lower() == 'y'
     if choice_1:
         return True
@@ -157,13 +156,17 @@ def main():
     if fileNOTempty(pacfile) or fileNOTempty(aurfile) is True:
         if date1 < date2:
             totprint(getfeed())
-            if choice():
-                update()
+            if choice("continue showing packages? "):
+                totprint(format_pkgdata())
+                if choice("update? "):
+                    update()
+                else:
+                    exit
             else:
                 exit
         else:
             totprint(format_pkgdata())
-            if choice():
+            if choice("update? "):
                 update()
             else:
                 exit
