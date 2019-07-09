@@ -35,7 +35,6 @@ def getfeed():
     feed = []
     for f in range(0, 1):
         feed = [fd.entries[f].published[5:-6]]
-        dt.datetime.strptime(feed[0], "%d %b %Y %H:%M:%S")
     feed.append([fd.entries[f].title])
     return feed
 
@@ -46,7 +45,6 @@ def lastupdate(logfile):
         for l in log:
             if "starting full system upgrade" in l:
                 date = re.search(r'\[(.*?)\]', l).group(1)
-                dt.datetime.strptime(date, '%Y-%m-%d %H:%M')
     return date
 
 
@@ -151,8 +149,8 @@ def totprint(data):
 
 
 def main():
-    date1 = lastupdate(logfile)
-    date2 = getfeed()[0]
+    date1 = dt.datetime.strptime(lastupdate(logfile), '%Y-%m-%d %H:%M')
+    date2 = dt.datetime.strptime(getfeed()[0], '%d %b %Y %H:%M:%S')
     if fileNOTempty(pacfile) or fileNOTempty(aurfile) is True:
         if date1 < date2:
             totprint(getfeed())
