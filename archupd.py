@@ -67,7 +67,7 @@ def update():
         sp.run('/usr/bin/sudo pacman -Syu --noconfirm', shell=True)
         clearfile(pacfile)
     if fileNOTempty(aurfile):
-        sp.run('aurman -Syu', shell=True)
+        sp.run('pikaur -Syu', shell=True)
         clearfile(aurfile)
     input('\x1b[6:30:42m' + 'Finished...' + '\x1b[0m')
     exit
