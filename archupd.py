@@ -14,6 +14,7 @@
 import re
 import os
 import sys
+import pytz
 import itertools
 import datetime as dt
 import subprocess as sp
@@ -149,12 +150,16 @@ def totprint(data):
 
 
 def main():
-    date1 = dt.datetime.strptime(lastupdate(logfile), '%Y-%m-%d %H:%M')
+    try:
+        date1 = dt.datetime.strptime(lastupdate(logfile), '%Y-%m-%d %H:%M')
+    except ValueError:
+        date1 = dt.datetime.strptime(lastupdate(logfile), '%Y-%m-%dT%H:%M:%S%z')
     date2 = dt.datetime.strptime(getfeed()[0], '%d %b %Y %H:%M:%S')
     if fileNOTempty(pacfile) or fileNOTempty(aurfile) is True:
-        if date1 < date2:
+        if date1 < pytz.utc.localize(date2):
             totprint(getfeed())
             if choice("continue showing packages? "):
+                sp.call('clear')
                 totprint(format_pkgdata())
                 if choice("update? "):
                     update()
