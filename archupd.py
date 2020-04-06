@@ -59,12 +59,8 @@ def choice(msg):
 
 
 def update():
-    if fileNOTempty(paclist):
-        sp.run('/usr/bin/sudo pacman -Syu --noconfirm', shell=True)
-        clearfile(paclist)
-    if fileNOTempty(aurlist):
+    if paclist or aurlist:
         sp.run('pikaur -Syu', shell=True)
-        clearfile(aurlist)
     input('\x1b[6:30:42m' + 'Finished...' + '\x1b[0m')
     exit
 
