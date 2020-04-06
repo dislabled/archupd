@@ -20,9 +20,8 @@ import datetime as dt
 import subprocess as sp
 import feedparser
 
-
-pacfile = '/home/stian/.config/polybar/scripts/archpkg/pac.txt'
-aurfile = '/home/stian/.config/polybar/scripts/archpkg/aur.txt'
+paclist = sp.check_output('checkupdates').decode('UTF-8')
+aurlist = sp.check_output('checkupdates-aur').decode('UTF-8')
 logfile = '/var/log/pacman.log'
 ipac = ['linux', 'systemd', 'glibc', 'gcc', 'gcc-libs', 'cmake', 'pacman']
 
@@ -49,10 +48,6 @@ def lastupdate(logfile):
     return date
 
 
-def fileNOTempty(fname):
-    return os.path.getsize(fname) > 0
-
-
 def clearfile(fname):
     open(fname, 'w').close()
 
@@ -64,12 +59,12 @@ def choice(msg):
 
 
 def update():
-    if fileNOTempty(pacfile):
+    if fileNOTempty(paclist):
         sp.run('/usr/bin/sudo pacman -Syu --noconfirm', shell=True)
-        clearfile(pacfile)
-    if fileNOTempty(aurfile):
+        clearfile(paclist)
+    if fileNOTempty(aurlist):
         sp.run('pikaur -Syu', shell=True)
-        clearfile(aurfile)
+        clearfile(aurlist)
     input('\x1b[6:30:42m' + 'Finished...' + '\x1b[0m')
     exit
 
@@ -84,29 +79,20 @@ with open(getworkingdir() + '/gfx/exclmar.ans', 'r') as f:
 
 def format_pkgdata():
     pac, aur = [], []
-    with open(pacfile, 'r') as f:
-        for w in f.readlines():
-            pac.append(w.split())
-
-    with open(aurfile, "r") as f:
-        for w in f.readlines():
-            aur.append(w.split())
-
-#    for x in range(len(aur)):
-#        try:
-#            aur[x].remove("::")
-#        except ValueError:
-#            pass
+    for w in paclist.splitlines():
+        pac.append(w.split())
+    for w in aurlist.splitlines():
+        aur.append(w.split())
     pactxt = [("\x1b[1;34mPac:"),
               ("------------------"), ("--"), ("-----------\x1b[0m")]
     aurtxt = [("\x1b[1;34mAur:"),
               ("------------------"), ("--"), ("-----------\x1b[0m")]
     d = []
     dret = []
-    if os.path.getsize(pacfile) > 0:
+    if paclist:
         d.append(pactxt)
         d.extend(pac)
-    if os.path.getsize(aurfile) > 0:
+    if aurlist:
         d.append(aurtxt)
         d.extend(aur)
     for p in range(len(d)):
@@ -155,7 +141,7 @@ def main():
     except ValueError:
         date1 = dt.datetime.strptime(lastupdate(logfile), '%Y-%m-%dT%H:%M:%S%z')
     date2 = dt.datetime.strptime(getfeed()[0], '%d %b %Y %H:%M:%S')
-    if fileNOTempty(pacfile) or fileNOTempty(aurfile) is True:
+    if paclist or aurlist !=  None:
         if date1 < pytz.utc.localize(date2):
             totprint(getfeed())
             if choice("continue showing packages? "):
