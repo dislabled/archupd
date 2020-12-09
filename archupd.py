@@ -20,10 +20,19 @@ import datetime as dt
 import subprocess as sp
 import feedparser
 
-paclist = sp.check_output('checkupdates').decode('UTF-8')
-aurlist = sp.check_output('checkupdates-aur').decode('UTF-8')
 logfile = '/var/log/pacman.log'
 ipac = ['linux', 'systemd', 'glibc', 'gcc', 'gcc-libs', 'cmake', 'pacman']
+
+
+def checkupdates(type):
+    try:
+        return(sp.check_output(type).decode('UTF-8'))
+    except sp.CalledProcessError:
+        return(0)
+
+
+paclist = checkupdates('checkupdates')
+aurlist = checkupdates('checkupdates-aur')
 
 
 def getworkingdir():
@@ -60,7 +69,7 @@ def choice(msg):
 
 def update():
     if paclist or aurlist:
-        sp.run('pikaur -Syu', shell=True)
+        sp.run('pikaur -Syu --noedit --nodiff', shell=True)
     input('\x1b[6:30:42m' + 'Finished...' + '\x1b[0m')
     exit
 
